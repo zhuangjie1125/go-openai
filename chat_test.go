@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"io"
 	"net/http"
 	"strconv"
@@ -1159,4 +1160,44 @@ func TestChatCompletionRequest_UnmarshalJSON(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestChatCompletionMessage_UnmarshalJSON(t *testing.T) {
+	bs := []byte(`{
+  "role": "system",
+  "content": "You are a helpful math tutor.",
+  "name": "name",
+  "multimodal_contents": [
+    {
+      "type": "text",
+      "text": "好的"
+    },
+    {
+      "type": "text",
+      "text": "为你生成一张柴犬的图片。"
+    },
+    {
+      "type": "inline_data",
+      "inline_data": {
+        "mime_type": "image/png",
+        "data": "iVBORw0KGgoAAAANSUhEUgAAAgAAAAI"
+      }
+    }
+  ]
+}`)
+	chatMessage := &openai.ChatCompletionMessage{}
+	err := json.Unmarshal(bs, chatMessage)
+	assert.Nil(t, err)
+
+	multimodalContent := chatMessage.ExtraFields["multimodal_contents"]
+	mContents := make([]map[string]any, 0)
+	err = json.Unmarshal(multimodalContent, &mContents)
+	assert.Nil(t, err)
+
+	assert.Equal(t, mContents, []map[string]any{
+		{"type": "text", "text": "好的"},
+		{"type": "text", "text": "为你生成一张柴犬的图片。"},
+		{"type": "inline_data", "inline_data": map[string]any{"mime_type": "image/png", "data": "iVBORw0KGgoAAAANSUhEUgAAAgAAAAI"}},
+	})
+
 }
